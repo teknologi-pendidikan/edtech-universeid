@@ -4,195 +4,263 @@
     <meta charset="UTF-8">
     <title>Journal Metadata Lookup</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; max-width: 900px; }
-        label, input, button { font-size: 16px; }
-        input { padding: 5px; width: 200px; }
-        button { padding: 6px 10px; margin-left: 5px; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #aaa; padding: 8px; text-align: left; font-size: 14px; }
-        th { background-color: #eee; }
-        #status { margin-top: 10px; font-style: italic; color: #555; }
-        .status-error { color: red; }
-        .status-success { color: green; }
-        .status-loading { color: blue; }
-        footer { margin-top: 40px; font-size: 13px; color: #999; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            max-width: 1000px;
+            background-color: #fff;
+            color: #000;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark {
+            background-color: #121212;
+            color: #f0f0f0;
+        }
+        h2 { margin-bottom: 10px; }
+        label, input, button, textarea, select { font-size: 16px; }
+        input, textarea {
+            padding: 6px;
+            margin: 4px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            margin-top: 10px;
+            padding: 8px 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #eee;
+        }
+        body.dark th {
+            background-color: #333;
+        }
+        #status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+        }
+        .toggle-group {
+            margin: 10px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        footer {
+            margin-top: 40px;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        @media print {
+            input, textarea, button, footer, #modeToggle, #exportBtn, #darkModeToggle, #printBtn {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <h2>Journal Metadata Lookup (Single ISSN)</h2>
-    <label for="issn">Enter E-ISSN:</label>
-    <input type="text" id="issn" placeholder="e.g. 1234-5678" />
-    <button id="lookup-btn" onclick="lookup()">Lookup</button>
+    <h2>Journal Metadata Lookup</h2>
+
+    <div class="toggle-group">
+        <button id="modeToggle">Switch to Bulk Mode</button>
+        <button id="darkModeToggle">Toggle Dark Mode</button>
+        <button id="printBtn" onclick="window.print()">🖨️ Print</button>
+    </div>
+
+    <div id="singleInput">
+        <label for="issn">Enter E-ISSN:</label>
+        <input type="text" id="issn" placeholder="e.g. 1234-5678" />
+    </div>
+
+    <div id="bulkInput" class="hidden">
+        <label for="bulkIssns">Enter multiple E-ISSNs (one per line):</label>
+        <textarea id="bulkIssns" placeholder="e.g.\n1234-5678\n2345-6789"></textarea>
+    </div>
+
+    <button onclick="lookup()">Lookup</button>
     <span id="status"></span>
     <div id="result"></div>
-    <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy to Clipboard (Transposed)</button>
+    <button id="exportBtn" onclick="exportCSV()" style="margin-top: 10px;">Export to CSV</button>
 
     <footer>
-        <hr>
-        <button onclick="clearCache()">🧹 Clear Local Cache</button>
+        <button onclick="localStorage.clear(); alert('Local storage cleared.');">Clear Local Storage</button>
     </footer>
 
     <script>
-        const cacheKey = "issnMetadataCache";
-        const cache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
+        const modeToggle = document.getElementById("modeToggle");
+        const darkModeToggle = document.getElementById("darkModeToggle");
+        const singleInput = document.getElementById("singleInput");
+        const bulkInput = document.getElementById("bulkInput");
+        let isBulk = false;
 
-        // Auto-format ISSN input
-        document.getElementById("issn").addEventListener("input", function (e) {
-            let raw = e.target.value.replace(/[^0-9Xx]/g, "");
-            if (raw.length > 4) raw = raw.slice(0, 4) + "-" + raw.slice(4, 8);
-            e.target.value = raw.slice(0, 9);
-        });
+        modeToggle.onclick = () => {
+            isBulk = !isBulk;
+            modeToggle.innerText = isBulk ? "Switch to Single Mode" : "Switch to Bulk Mode";
+            singleInput.classList.toggle("hidden", isBulk);
+            bulkInput.classList.toggle("hidden", !isBulk);
+        };
 
-        // Auto-submit on Enter
-        document.getElementById("issn").addEventListener("keydown", function (event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
+        darkModeToggle.onclick = () => {
+            document.body.classList.toggle("dark");
+        };
+
+        document.getElementById("issn").addEventListener("keypress", e => {
+            if (e.key === "Enter") {
+                e.preventDefault();
                 lookup();
             }
         });
 
+        function normalizeISSN(value) {
+            return value.replace(/\s+/g, "").replace(/[^0-9Xx]/g, "").toUpperCase().replace(/^(.{4})(.{4})$/, "$1-$2");
+        }
+
         async function lookup() {
-            const issn = document.getElementById("issn").value.trim();
             const resultDiv = document.getElementById("result");
             const status = document.getElementById("status");
-            const lookupBtn = document.getElementById("lookup-btn");
-
             resultDiv.innerHTML = "";
-            status.innerText = "";
-            lookupBtn.disabled = true;
-
-            if (!issn) {
-                status.innerText = "❗ Please enter an E-ISSN.";
-                status.className = "status-error";
-                lookupBtn.disabled = false;
-                return;
-            }
-
-            if (cache[issn]) {
-                resultDiv.innerHTML = makeTable(cache[issn]);
-                status.innerText = "⚡ Loaded from local cache.";
-                status.className = "status-success";
-                lookupBtn.disabled = false;
-                return;
-            }
-
             status.innerText = "🔍 Fetching data...";
-            status.className = "status-loading";
 
-            let openalex = null, crossref = null, doaj = null, rorName = "", rorId = "";
-            let anySuccess = false;
+            const input = isBulk ? document.getElementById("bulkIssns").value.split("\n") : [document.getElementById("issn").value];
+            const issns = input.map(i => normalizeISSN(i.trim())).filter(i => i);
 
-            try {
-                const [oaRes, crRes, djRes] = await Promise.all([
-                    fetch(`https://api.openalex.org/sources/issn:${issn}`),
-                    fetch(`https://api.crossref.org/journals/${issn}`),
-                    fetch(`https://doaj.org/api/v4/search/journals/issn:${issn}?page=1&pageSize=1`)
-                ]);
+            const allResults = [];
 
-                openalex = oaRes.ok ? await oaRes.json() : null;
-                crossref = crRes.ok ? await crRes.json() : null;
-                doaj = djRes.ok ? await djRes.json() : null;
-
-                if (openalex?.id || crossref?.message?.ISSN || doaj?.results?.length > 0) {
-                    anySuccess = true;
+            for (const issn of issns) {
+                const cached = localStorage.getItem(`metadata-${issn}`);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    parsed._fromCache = true;
+                    allResults.push([issn, parsed]);
+                    continue;
                 }
 
-                const bib = doaj?.results?.[0]?.bibjson || {};
-                const openData = openalex || {};
-                const crossData = crossref?.message || {};
-                const publisherName = bib.publisher?.name || openData.host_organization_name || crossData.publisher || "";
+                try {
+                    const [oaRes, crRes, djRes] = await Promise.all([
+                        fetch(`https://api.openalex.org/sources/issn:${issn}`),
+                        fetch(`https://api.crossref.org/journals/${issn}`),
+                        fetch(`https://doaj.org/api/v4/search/journals/issn:${issn}?page=1&pageSize=1`)
+                    ]);
 
-                if (publisherName) {
-                    try {
-                        const rorRes = await fetch(`https://api.ror.org/organizations?query=${encodeURIComponent(publisherName)}`);
-                        const rorData = await rorRes.json();
-                        if (rorData?.items?.length > 0) {
-                            const firstMatch = rorData.items[0];
-                            rorName = firstMatch.name || "";
-                            rorId = firstMatch.id || "";
-                        }
-                    } catch {}
+                    const openalex = oaRes.ok ? await oaRes.json() : null;
+                    const crossref = crRes.ok ? await crRes.json() : null;
+                    const doaj = djRes.ok ? await djRes.json() : null;
+
+                    const bib = doaj?.results?.[0]?.bibjson || {};
+                    const openData = openalex || {};
+                    const crossData = crossref?.message || {};
+                    const publisherName = bib.publisher?.name || openData.host_organization_name || crossData.publisher || "";
+
+                    let rorName = "", rorId = "";
+                    if (publisherName) {
+                        try {
+                            const rorRes = await fetch(`https://api.ror.org/organizations?query=${encodeURIComponent(publisherName)}`);
+                            const rorData = await rorRes.json();
+                            if (rorData?.items?.length > 0) {
+                                rorName = rorData.items[0].name || "";
+                                rorId = rorData.items[0].id || "";
+                            }
+                        } catch {}
+                    }
+
+                    const result = {
+                        "Source": [doaj?.results?.length > 0 ? "DOAJ" : "", openalex?.id ? "OpenAlex" : "", crossref?.message?.ISSN ? "Crossref" : ""].filter(Boolean).join(" + ") || "Not Found",
+                        "E-ISSN": issn,
+                        "P-ISSN": bib.pissn || openData.issn?.find(x => x !== issn) || crossData.ISSN?.find(x => x !== issn) || "Data not found",
+                        "Title": bib.title || openData.display_name || crossData.title || "Data not found",
+                        "Publisher": publisherName || "Data not found",
+                        "Publisher Country": bib.publisher?.country || openData.country_code || "Data not found",
+                        "ROR Name": rorName || "Data not found",
+                        "ROR ID": rorId || "Data not found",
+                        "URL": bib.ref?.journal || openData.homepage_url || crossData.URL || "Data not found",
+                        "License": bib.license?.[0]?.type || "Data not found",
+                        "License URL": bib.license?.[0]?.url || "Data not found",
+                        "Language": (bib.language || []).join(", ") || "Data not found",
+                        "APC": bib.apc?.has_apc ? "Yes" : (openData.apc_prices?.length > 0 ? "Yes" : "No"),
+                        "APC Amount": bib.apc?.max?.[0]?.price || openData.apc_prices?.[0]?.price || "Data not found",
+                        "APC Currency": bib.apc?.max?.[0]?.currency || openData.apc_prices?.[0]?.currency || "Data not found",
+                        "Subjects": (bib.subject || []).map(s => `${s.term} (${s.scheme})`).join("; ") || "Data not found",
+                        "Keywords": (bib.keywords || []).join(", ") || "Data not found",
+                        "Review Process": Array.isArray(bib.editorial?.review_process) ? bib.editorial.review_process.join(", ") : "Data not found",
+                        "Publication Time (weeks)": bib.publication_time_weeks || "Data not found",
+                        "OA Start Year": bib.oa_start || "Data not found",
+                        "BOAI Compliant": bib.boai ? "Yes" : (openData.is_oa ? "Yes" : "No"),
+                        "Uses DOI": (bib.pid_scheme?.has_pid_scheme && bib.pid_scheme.scheme?.includes("DOI")) || openData.works_count > 0 || crossData["doi-prefixes"] ? "Yes" : "No",
+                        "DOI Prefix": crossData["doi-prefixes"]?.[0]?.prefix || "Data not found",
+                        "Crossref Member ID": crossData.member || "Data not found",
+                        "Works Count": openData.works_count || "Data not found",
+                        "Cited By Count": openData.cited_by_count || "Data not found",
+                        "h-index": openData.summary_stats?.h_index || "Data not found",
+                        "Topics": (openData.topics || []).slice(0, 5).map(t => t.display_name).join("; ") || "Data not found"
+                    };
+
+                    localStorage.setItem(`metadata-${issn}`, JSON.stringify(result));
+                    allResults.push([issn, result]);
+
+                } catch (err) {
+                    console.error(`Error processing ISSN ${issn}`, err);
+                    status.innerText = `❌ Error occurred while looking up ${issn}`;
                 }
-
-                const result = {
-                    "Source": [doaj?.results?.length > 0 ? "DOAJ" : "", openalex?.id ? "OpenAlex" : "", crossref?.message?.ISSN ? "Crossref" : ""].filter(Boolean).join(" + ") || "Not Found",
-                    "E-ISSN": issn,
-                    "P-ISSN": bib.pissn || openData.issn?.find(x => x !== issn) || crossData.ISSN?.find(x => x !== issn) || "Data not found",
-                    "Title": bib.title || openData.display_name || crossData.title || "Data not found",
-                    "Publisher": publisherName || "Data not found",
-                    "Publisher Country": bib.publisher?.country || openData.country_code || "Data not found",
-                    "ROR Name": rorName || "Data not found",
-                    "ROR ID": rorId || "Data not found",
-                    "URL": bib.ref?.journal || openData.homepage_url || crossData.URL || "Data not found",
-                    "License": bib.license?.[0]?.type || "Data not found",
-                    "License URL": bib.license?.[0]?.url || "Data not found",
-                    "Language": (bib.language || []).join(", ") || "Data not found",
-                    "APC": bib.apc?.has_apc ? "Yes" : (openData.apc_prices?.length > 0 ? "Yes" : "No"),
-                    "APC Amount": bib.apc?.max?.[0]?.price || openData.apc_prices?.[0]?.price || "Data not found",
-                    "APC Currency": bib.apc?.max?.[0]?.currency || openData.apc_prices?.[0]?.currency || "Data not found",
-                    "Subjects": (bib.subject || []).map(s => `${s.term} (${s.scheme})`).join("; ") || "Data not found",
-                    "Keywords": (bib.keywords || []).join(", ") || "Data not found",
-                    "Review Process": Array.isArray(bib.editorial?.review_process) ? bib.editorial.review_process.join(", ") : "Data not found",
-                    "Publication Time (weeks)": bib.publication_time_weeks || "Data not found",
-                    "OA Start Year": bib.oa_start || "Data not found",
-                    "BOAI Compliant": bib.boai ? "Yes" : (openData.is_oa ? "Yes" : "No"),
-                    "Uses DOI": (bib.pid_scheme?.has_pid_scheme && bib.pid_scheme.scheme?.includes("DOI")) || openData.works_count > 0 || crossData["doi-prefixes"] ? "Yes" : "No",
-                    "DOI Prefix": crossData["doi-prefixes"]?.[0]?.prefix || "Data not found",
-                    "Crossref Member ID": crossData.member || "Data not found",
-                    "Works Count": openData.works_count || "Data not found",
-                    "Cited By Count": openData.cited_by_count || "Data not found",
-                    "h-index": openData.summary_stats?.h_index || "Data not found",
-                    "Topics": (openData.topics || []).slice(0, 5).map(t => t.display_name).join("; ") || "Data not found"
-                };
-
-                if (anySuccess) {
-                    cache[issn] = result;
-                    localStorage.setItem(cacheKey, JSON.stringify(cache));
-                    resultDiv.innerHTML = makeTable(result);
-                    status.innerText = "✅ Lookup complete.";
-                    status.className = "status-success";
-                } else {
-                    status.innerText = "❗ ISSN not found in OpenAlex, DOAJ, or Crossref.";
-                    status.className = "status-error";
-                    resultDiv.innerHTML = "";
-                }
-
-            } catch (err) {
-                status.innerText = "❌ Error occurred during lookup.";
-                status.className = "status-error";
-                console.error(err);
             }
 
-            lookupBtn.disabled = false;
+            status.innerText = `✅ Lookup complete (${allResults.length} result${allResults.length > 1 ? "s" : ""}).`;
+            resultDiv.innerHTML = allResults.map(([issn, res]) => `<h4>${issn}${res._fromCache ? " (cached)" : ""}</h4>` + makeTable(res)).join("<hr/>");
         }
 
         function makeTable(data) {
             let html = "<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>";
             for (let key in data) {
-                html += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
+                if (!key.startsWith("_")) {
+                    html += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
+                }
             }
             html += "</tbody></table>";
             return html;
         }
 
-        function copyToClipboard() {
-            const rows = document.querySelectorAll("table tr");
-            const values = [];
-            for (let i = 1; i < rows.length; i++) {
-                const val = rows[i].querySelectorAll("td")[1]?.innerText;
-                values.push(val);
-            }
-            const text = values.map(v => `"${v}"`).join("\t");
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Copied to clipboard in transposed format.");
-            });
-        }
+        function exportCSV() {
+            const tables = document.querySelectorAll("table");
+            if (tables.length === 0) return alert("No data to export.");
 
-        function clearCache() {
-            if (confirm("Are you sure you want to clear the local cache?")) {
-                localStorage.removeItem(cacheKey);
-                location.reload();
+            const fieldOrder = Array.from(tables[0].querySelectorAll("tr")).slice(1).map(row => row.cells[0].innerText);
+            const dataRows = [];
+
+            for (const table of tables) {
+                const values = fieldOrder.map(field => {
+                    const cell = Array.from(table.rows).find(row => row.cells[0].innerText === field);
+                    return `"${(cell?.cells[1].innerText || "").replace(/"/g, '""')}"`;
+                });
+                dataRows.push(values.join(","));
             }
+
+            const csvContent = [fieldOrder.map(f => `"${f}"`).join(","), ...dataRows].join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "journal_metadata.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
     </script>
 </body>
