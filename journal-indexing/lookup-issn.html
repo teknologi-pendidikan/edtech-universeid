@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Journal Metadata Lookup</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; max-width: 900px; }
+        label, input, button { font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #aaa; padding: 8px; text-align: left; font-size: 14px; }
+        th { background-color: #eee; }
+        #status { margin-top: 10px; font-style: italic; color: #555; }
+    </style>
+</head>
+<body>
+    <h2>Journal Metadata Lookup (Single ISSN)</h2>
+    <label for="issn">Enter E-ISSN:</label>
+    <input type="text" id="issn" placeholder="e.g. 1234-5678" />
+    <button onclick="lookup()">Lookup</button>
+    <span id="status"></span>
+    <div id="result"></div>
+    <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy to Clipboard (Excel Format)</button>
+
+    <script>
+        async function lookup() {
+            const issn = document.getElementById("issn").value.trim();
+            const resultDiv = document.getElementById("result");
+            const status = document.getElementById("status");
+            resultDiv.innerHTML = "";
+            status.innerText = "";
+
+            if (!issn) {
+                status.innerText = "❗ Please enter an E-ISSN.";
+                return;
+            }
+
+            status.innerText = "🔍 Fetching data...";
+            let openalex = null, crossref = null, doaj = null, rorName = "", rorId = "";
+            let anySuccess = false;
+
+            try {
+                const [oaRes, crRes, djRes] = await Promise.all([
+                    fetch(`https://api.openalex.org/sources/issn:${issn}`),
+                    fetch(`https://api.crossref.org/journals/${issn}`),
+                    fetch(`https://doaj.org/api/v4/search/journals/issn:${issn}?page=1&pageSize=1`)
+                ]);
+
+                openalex = oaRes.ok ? await oaRes.json() : null;
+                crossref = crRes.ok ? await crRes.json() : null;
+                doaj = djRes.ok ? await djRes.json() : null;
+
+                if (openalex?.id || crossref?.message?.ISSN || doaj?.results?.length > 0) {
+                    anySuccess = true;
+                }
+
+                const bib = doaj?.results?.[0]?.bibjson || {};
+                const openData = openalex || {};
+                const crossData = crossref?.message || {};
+                const publisherName = bib.publisher?.name || openData.host_organization_name || crossData.publisher || "";
+
+                if (publisherName) {
+                    try {
+                        const rorRes = await fetch(`https://api.ror.org/organizations?query=${encodeURIComponent(publisherName)}`);
+                        const rorData = await rorRes.json();
+                        if (rorData?.items?.length > 0) {
+                            const firstMatch = rorData.items[0];
+                            rorName = firstMatch.name || "";
+                            rorId = firstMatch.id || "";
+                        }
+                    } catch {
+                        // Skip ROR if lookup fails
+                    }
+                }
+
+                const result = {
+                    "Source": [doaj?.results?.length > 0 ? "DOAJ" : "", openalex?.id ? "OpenAlex" : "", crossref?.message?.ISSN ? "Crossref" : ""].filter(Boolean).join(" + ") || "Not Found",
+                    "E-ISSN": issn,
+                    "P-ISSN": bib.pissn || openData.issn?.find(x => x !== issn) || crossData.ISSN?.find(x => x !== issn) || "Data not found",
+                    "Title": bib.title || openData.display_name || crossData.title || "Data not found",
+                    "Publisher": publisherName || "Data not found",
+                    "Publisher Country": bib.publisher?.country || openData.country_code || "Data not found",
+                    "ROR Name": rorName || "Data not found",
+                    "ROR ID": rorId || "Data not found",
+                    "URL": bib.ref?.journal || openData.homepage_url || crossData.URL || "Data not found",
+                    "License": bib.license?.[0]?.type || "Data not found",
+                    "License URL": bib.license?.[0]?.url || "Data not found",
+                    "Language": (bib.language || []).join(", ") || "Data not found",
+                    "APC": bib.apc?.has_apc ? "Yes" : (openData.apc_prices?.length > 0 ? "Yes" : "No"),
+                    "APC Amount": bib.apc?.max?.[0]?.price || openData.apc_prices?.[0]?.price || "Data not found",
+                    "APC Currency": bib.apc?.max?.[0]?.currency || openData.apc_prices?.[0]?.currency || "Data not found",
+                    "Subjects": (bib.subject || []).map(s => `${s.term} (${s.scheme})`).join("; ") || "Data not found",
+                    "Keywords": (bib.keywords || []).join(", ") || "Data not found",
+                    "Review Process": Array.isArray(bib.editorial?.review_process) ? bib.editorial.review_process.join(", ") : "Data not found",
+                    "Publication Time (weeks)": bib.publication_time_weeks || "Data not found",
+                    "OA Start Year": bib.oa_start || "Data not found",
+                    "BOAI Compliant": bib.boai ? "Yes" : (openData.is_oa ? "Yes" : "No"),
+                    "Uses DOI": (bib.pid_scheme?.has_pid_scheme && bib.pid_scheme.scheme?.includes("DOI")) || openData.works_count > 0 || crossData["doi-prefixes"] ? "Yes" : "No",
+                    "DOI Prefix": crossData["doi-prefixes"]?.[0]?.prefix || "Data not found",
+                    "Crossref Member ID": crossData.member || "Data not found",
+                    "Works Count": openData.works_count || "Data not found",
+                    "Cited By Count": openData.cited_by_count || "Data not found",
+                    "h-index": openData.summary_stats?.h_index || "Data not found",
+                    "Topics": (openData.topics || []).slice(0, 5).map(t => t.display_name).join("; ") || "Data not found"
+                };
+
+                if (anySuccess) {
+                    resultDiv.innerHTML = makeTable(result);
+                    status.innerText = "✅ Lookup complete.";
+                } else {
+                    status.innerText = "❗ ISSN not found in OpenAlex, DOAJ, or Crossref.";
+                    resultDiv.innerHTML = "";
+                }
+
+            } catch (err) {
+                status.innerText = "❌ Error occurred during lookup.";
+                console.error(err);
+            }
+        }
+
+        function makeTable(data) {
+            let html = "<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>";
+            for (let key in data) {
+                html += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
+            }
+            html += "</tbody></table>";
+            return html;
+        }
+
+        function copyToClipboard() {
+            const rows = document.querySelectorAll("table tr");
+            const lines = [];
+            for (let row of rows) {
+                const cols = row.querySelectorAll("td, th");
+                lines.push(Array.from(cols).map(col => `"${col.innerText}"`).join("\t"));
+            }
+            const text = lines.join("\n");
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Copied to clipboard in Excel-compatible format.");
+            });
+        }
+    </script>
+</body>
+</html>
