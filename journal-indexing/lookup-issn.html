@@ -6,35 +6,79 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; max-width: 900px; }
         label, input, button { font-size: 16px; }
+        input { padding: 5px; width: 200px; }
+        button { padding: 6px 10px; margin-left: 5px; cursor: pointer; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #aaa; padding: 8px; text-align: left; font-size: 14px; }
         th { background-color: #eee; }
         #status { margin-top: 10px; font-style: italic; color: #555; }
+        .status-error { color: red; }
+        .status-success { color: green; }
+        .status-loading { color: blue; }
+        footer { margin-top: 40px; font-size: 13px; color: #999; }
     </style>
 </head>
 <body>
     <h2>Journal Metadata Lookup (Single ISSN)</h2>
     <label for="issn">Enter E-ISSN:</label>
     <input type="text" id="issn" placeholder="e.g. 1234-5678" />
-    <button onclick="lookup()">Lookup</button>
+    <button id="lookup-btn" onclick="lookup()">Lookup</button>
     <span id="status"></span>
     <div id="result"></div>
-    <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy to Clipboard (Excel Format)</button>
+    <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy to Clipboard (Transposed)</button>
+
+    <footer>
+        <hr>
+        <button onclick="clearCache()">🧹 Clear Local Cache</button>
+    </footer>
 
     <script>
+        const cacheKey = "issnMetadataCache";
+        const cache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
+
+        // Auto-format ISSN input
+        document.getElementById("issn").addEventListener("input", function (e) {
+            let raw = e.target.value.replace(/[^0-9Xx]/g, "");
+            if (raw.length > 4) raw = raw.slice(0, 4) + "-" + raw.slice(4, 8);
+            e.target.value = raw.slice(0, 9);
+        });
+
+        // Auto-submit on Enter
+        document.getElementById("issn").addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                lookup();
+            }
+        });
+
         async function lookup() {
             const issn = document.getElementById("issn").value.trim();
             const resultDiv = document.getElementById("result");
             const status = document.getElementById("status");
+            const lookupBtn = document.getElementById("lookup-btn");
+
             resultDiv.innerHTML = "";
             status.innerText = "";
+            lookupBtn.disabled = true;
 
             if (!issn) {
                 status.innerText = "❗ Please enter an E-ISSN.";
+                status.className = "status-error";
+                lookupBtn.disabled = false;
+                return;
+            }
+
+            if (cache[issn]) {
+                resultDiv.innerHTML = makeTable(cache[issn]);
+                status.innerText = "⚡ Loaded from local cache.";
+                status.className = "status-success";
+                lookupBtn.disabled = false;
                 return;
             }
 
             status.innerText = "🔍 Fetching data...";
+            status.className = "status-loading";
+
             let openalex = null, crossref = null, doaj = null, rorName = "", rorId = "";
             let anySuccess = false;
 
@@ -67,9 +111,7 @@
                             rorName = firstMatch.name || "";
                             rorId = firstMatch.id || "";
                         }
-                    } catch {
-                        // Skip ROR if lookup fails
-                    }
+                    } catch {}
                 }
 
                 const result = {
@@ -104,17 +146,24 @@
                 };
 
                 if (anySuccess) {
+                    cache[issn] = result;
+                    localStorage.setItem(cacheKey, JSON.stringify(cache));
                     resultDiv.innerHTML = makeTable(result);
                     status.innerText = "✅ Lookup complete.";
+                    status.className = "status-success";
                 } else {
                     status.innerText = "❗ ISSN not found in OpenAlex, DOAJ, or Crossref.";
+                    status.className = "status-error";
                     resultDiv.innerHTML = "";
                 }
 
             } catch (err) {
                 status.innerText = "❌ Error occurred during lookup.";
+                status.className = "status-error";
                 console.error(err);
             }
+
+            lookupBtn.disabled = false;
         }
 
         function makeTable(data) {
@@ -128,15 +177,22 @@
 
         function copyToClipboard() {
             const rows = document.querySelectorAll("table tr");
-            const lines = [];
-            for (let row of rows) {
-                const cols = row.querySelectorAll("td, th");
-                lines.push(Array.from(cols).map(col => `"${col.innerText}"`).join("\t"));
+            const values = [];
+            for (let i = 1; i < rows.length; i++) {
+                const val = rows[i].querySelectorAll("td")[1]?.innerText;
+                values.push(val);
             }
-            const text = lines.join("\n");
+            const text = values.map(v => `"${v}"`).join("\t");
             navigator.clipboard.writeText(text).then(() => {
-                alert("Copied to clipboard in Excel-compatible format.");
+                alert("Copied to clipboard in transposed format.");
             });
+        }
+
+        function clearCache() {
+            if (confirm("Are you sure you want to clear the local cache?")) {
+                localStorage.removeItem(cacheKey);
+                location.reload();
+            }
         }
     </script>
 </body>
