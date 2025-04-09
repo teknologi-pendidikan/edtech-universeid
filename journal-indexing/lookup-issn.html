@@ -1,162 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Journal Metadata Lookup</title>
   <style>
+    :root {
+      --bg-color: #f9f9f9;
+      --text-color: #222;
+      --accent-color: #006699;
+      --table-header-bg: #e0e0e0;
+      --table-row-alt: #f1f1f1;
+    }
+    body.dark-mode {
+      --bg-color: #1e1e1e;
+      --text-color: #eee;
+      --accent-color: #66ccff;
+      --table-header-bg: #333;
+      --table-row-alt: #2a2a2a;
+    }
     body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px auto;
       max-width: 1000px;
-      background-color: #fff;
-      color: #000;
+      padding: 0 20px;
       transition: background-color 0.3s, color 0.3s;
     }
-
-    body.dark {
-      background-color: #121212;
-      color: #eee;
+    h2 {
+      color: var(--accent-color);
     }
-
-    input, button, textarea, select {
+    label, input, textarea, button {
       font-size: 16px;
-      padding: 6px;
     }
-
-    textarea {
+    input[type="text"], textarea {
+      padding: 8px;
       width: 100%;
-      height: 100px;
-      margin-top: 5px;
+      max-width: 400px;
+      margin-bottom: 10px;
     }
-
+    textarea { resize: vertical; }
+    button {
+      padding: 8px 14px;
+      margin: 5px 5px 10px 0;
+      background-color: var(--accent-color);
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    #status {
+      margin-top: 10px;
+      font-style: italic;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 20px;
+      background: white;
     }
-
     th, td {
-      border: 1px solid #aaa;
-      padding: 6px;
+      border: 1px solid #ccc;
+      padding: 8px;
       text-align: left;
-      font-size: 14px;
     }
-
     th {
-      background-color: #eee;
+      background-color: var(--table-header-bg);
     }
-
-    body.dark th {
-      background-color: #333;
+    tbody tr:nth-child(even) {
+      background-color: var(--table-row-alt);
     }
-
-    .controls {
-      margin-bottom: 20px;
-    }
-
     .footer {
       margin-top: 40px;
-      font-size: 13px;
-      color: #777;
+      font-size: 14px;
+      color: gray;
+      text-align: center;
     }
-
     .footer button {
+      background: #999;
+    }
+    .toggle-group {
       margin-top: 10px;
     }
-
-    @media print {
-      button, .controls, .footer {
-        display: none !important;
-      }
-
-      body {
-        background: #fff !important;
-        color: #000 !important;
-      }
-
-      table {
-        page-break-inside: avoid;
-      }
+    .toggle-group label {
+      margin-right: 20px;
     }
   </style>
 </head>
 <body>
   <h2>Journal Metadata Lookup</h2>
-  <div class="controls">
-    <label><input type="radio" name="mode" value="single" checked onchange="switchMode()"> Single ISSN</label>
-    <label><input type="radio" name="mode" value="bulk" onchange="switchMode()"> Bulk ISSNs</label>
-    <br><br>
-    <div id="input-area">
-      <input type="text" id="issn" placeholder="e.g. 1234-5678" onkeypress="handleKey(event)">
-    </div>
-    <br>
-    <button onclick="lookup()">Lookup</button>
-    <button onclick="copyAllResults()">Copy All Results</button>
-    <button onclick="exportCSV()">Export CSV</button>
-    <button onclick="window.print()">Print</button>
-    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+
+  <div class="toggle-group">
+    <label>
+      <input type="radio" name="mode" value="single" checked onchange="toggleMode()"> Single ISSN
+    </label>
+    <label>
+      <input type="radio" name="mode" value="bulk" onchange="toggleMode()"> Bulk ISSNs
+    </label>
+    <label style="float: right;">
+      <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()"> Dark Mode
+    </label>
   </div>
 
-  <div id="status"></div>
+  <div id="inputArea">
+    <input type="text" id="issn" placeholder="e.g. 1234-5678" onkeyup="autoFormat(event)">
+  </div>
+
+  <button onclick="lookup()">Lookup</button>
+  <span id="status"></span>
+
   <div id="result"></div>
 
+  <div>
+    <button onclick="copyToClipboard()">Copy All (Transposed)</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="window.print()">Print</button>
+  </div>
+
   <div class="footer">
-    <p>Note: Data is cached using localStorage for performance.</p>
-    <button onclick="clearCache()">Clear Local Cache</button>
+    <button onclick="clearCache()">Clear Cache</button><br>
+    <span>&copy; 2025 Journal Lookup Tool</span>
   </div>
 
   <script>
-    let isBulk = false;
-
-    function switchMode() {
-      isBulk = document.querySelector('input[name="mode"]:checked').value === "bulk";
-      const area = document.getElementById("input-area");
-      area.innerHTML = isBulk ?
-        '<textarea id="issn" placeholder="Enter one ISSN per line"></textarea>' :
-        '<input type="text" id="issn" placeholder="e.g. 1234-5678" onkeypress="handleKey(event)">';
-    }
-
-    function handleKey(e) {
-      if (e.key === "Enter") lookup();
-    }
+    const resultDiv = document.getElementById("result");
+    const status = document.getElementById("status");
+    const darkToggle = document.getElementById("darkToggle");
+    const inputArea = document.getElementById("inputArea");
 
     function toggleDarkMode() {
-      document.body.classList.toggle("dark");
+      document.body.classList.toggle("dark-mode", darkToggle.checked);
+      localStorage.setItem("darkMode", darkToggle.checked);
     }
 
-    function clearCache() {
-      localStorage.removeItem("journalCache");
-      alert("Local cache cleared.");
+    function toggleMode() {
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      if (mode === "bulk") {
+        inputArea.innerHTML = `<textarea id="issn" rows="5" placeholder="e.g.\n1234-5678\n9876-5432"></textarea>`;
+      } else {
+        inputArea.innerHTML = `<input type="text" id="issn" placeholder="e.g. 1234-5678" onkeyup="autoFormat(event)">`;
+      }
     }
 
-    function formatISSN(raw) {
-      return raw.trim().replace(/[^0-9X]/gi, "").replace(/^(.{4})(.{4})$/, "$1-$2");
+    function autoFormat(e) {
+      const input = e.target;
+      if (e.key !== "Enter") {
+        input.value = input.value.replace(/^(\d{4})(\d{0,4})$/, (_, a, b) => b ? `${a}-${b}` : a);
+      } else {
+        lookup();
+      }
     }
 
-    function getCache() {
-      return JSON.parse(localStorage.getItem("journalCache") || "{}");
+    function getCacheKey(issn) {
+      return "lookup_" + issn;
     }
 
-    function saveCache(cache) {
-      localStorage.setItem("journalCache", JSON.stringify(cache));
-    }
-
-    async function lookup() {
-      const input = document.getElementById("issn").value.trim();
-      const status = document.getElementById("status");
-      const resultDiv = document.getElementById("result");
+    function lookup() {
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const issnInput = document.getElementById("issn").value.trim();
+      const issns = mode === "bulk" ? issnInput.split(/\s+/) : [issnInput];
       resultDiv.innerHTML = "";
-      status.innerText = "";
+      status.innerText = "🔍 Fetching...";
 
-      const issns = isBulk ? input.split("\n").map(formatISSN).filter(Boolean) : [formatISSN(input)];
-      const cache = getCache();
-      const allResults = [];
+      issns.forEach(async issn => {
+        if (!issn.match(/^\d{4}-\d{3}[\dxX]$/)) {
+          status.innerText = `❗ Invalid ISSN format: ${issn}`;
+          return;
+        }
 
-      for (const issn of issns) {
-        status.innerText = `🔍 Looking up: ${issn}`;
-        if (cache[issn]) {
-          allResults.push([issn, { ...cache[issn], _fromCache: true }]);
-          continue;
+        const cached = localStorage.getItem(getCacheKey(issn));
+        if (cached) {
+          renderTable(JSON.parse(cached), issn, true);
+          return;
         }
 
         try {
@@ -166,114 +184,113 @@
             fetch(`https://doaj.org/api/v4/search/journals/issn:${issn}?page=1&pageSize=1`)
           ]);
 
-          const openalex = oa.ok ? await oa.json() : {};
-          const crossref = cr.ok ? await cr.json() : {};
-          const doaj = dj.ok ? await dj.json() : {};
+          const [openalex, crossref, doaj] = await Promise.all([
+            oa.ok ? oa.json() : null,
+            cr.ok ? cr.json() : null,
+            dj.ok ? dj.json() : null
+          ]);
 
           const bib = doaj?.results?.[0]?.bibjson || {};
+          const openData = openalex || {};
           const crossData = crossref?.message || {};
-          const publisherName = bib.publisher?.name || openalex.host_organization_name || crossData.publisher || "";
+          const publisher = bib.publisher?.name || openData.host_organization_name || crossData.publisher || "";
 
           let rorName = "", rorId = "";
-          if (publisherName) {
-            try {
-              const rorRes = await fetch(`https://api.ror.org/organizations?query=${encodeURIComponent(publisherName)}`);
-              const rorData = await rorRes.json();
-              if (rorData?.items?.length > 0) {
-                const ror = rorData.items[0];
-                rorName = ror.name || "";
-                rorId = ror.id || "";
-              }
-            } catch {}
+          if (publisher) {
+            const rorRes = await fetch(`https://api.ror.org/organizations?query=${encodeURIComponent(publisher)}`);
+            const rorData = await rorRes.json();
+            if (rorData?.items?.length) {
+              rorName = rorData.items[0].name;
+              rorId = rorData.items[0].id;
+            }
           }
 
           const result = {
-            "Source": [doaj?.results?.length > 0 ? "DOAJ" : "", openalex?.id ? "OpenAlex" : "", crossData?.ISSN ? "Crossref" : ""].filter(Boolean).join(" + ") || "Not Found",
+            "Source": [doaj?.results?.length > 0 ? "DOAJ" : "", openalex?.id ? "OpenAlex" : "", crossref?.message?.ISSN ? "Crossref" : ""].filter(Boolean).join(" + ") || "Not Found",
             "E-ISSN": issn,
-            "P-ISSN": bib.pissn || openalex.issn?.find(x => x !== issn) || crossData.ISSN?.find(x => x !== issn) || "Data not found",
-            "Title": bib.title || openalex.display_name || crossData.title || "Data not found",
-            "Publisher": publisherName || "Data not found",
-            "Publisher Country": bib.publisher?.country || openalex.country_code || "Data not found",
-            "ROR Name": rorName || "Data not found",
-            "ROR ID": rorId || "Data not found",
-            "URL": bib.ref?.journal || openalex.homepage_url || crossData.URL || "Data not found",
-            "License": bib.license?.[0]?.type || "Data not found",
-            "License URL": bib.license?.[0]?.url || "Data not found",
-            "Language": (bib.language || []).join(", ") || "Data not found",
-            "APC": bib.apc?.has_apc ? "Yes" : (openalex.apc_prices?.length > 0 ? "Yes" : "No"),
-            "APC Amount": bib.apc?.max?.[0]?.price || openalex.apc_prices?.[0]?.price || "Data not found",
-            "APC Currency": bib.apc?.max?.[0]?.currency || openalex.apc_prices?.[0]?.currency || "Data not found",
-            "Subjects": (bib.subject || []).map(s => `${s.term} (${s.scheme})`).join("; ") || "Data not found",
-            "Keywords": (bib.keywords || []).join(", ") || "Data not found",
-            "Review Process": Array.isArray(bib.editorial?.review_process) ? bib.editorial.review_process.join(", ") : "Data not found",
-            "Publication Time (weeks)": bib.publication_time_weeks || "Data not found",
-            "OA Start Year": bib.oa_start || "Data not found",
-            "BOAI Compliant": bib.boai ? "Yes" : (openalex.is_oa ? "Yes" : "No"),
-            "Uses DOI": (bib.pid_scheme?.has_pid_scheme && bib.pid_scheme.scheme?.includes("DOI")) || openalex.works_count > 0 || crossData["doi-prefixes"] ? "Yes" : "No",
-            "DOI Prefix": crossData["doi-prefixes"]?.[0]?.prefix || "Data not found",
-            "Crossref Member ID": crossData.member || "Data not found",
-            "Works Count": openalex.works_count || "Data not found",
-            "Cited By Count": openalex.cited_by_count || "Data not found",
-            "h-index": openalex.summary_stats?.h_index || "Data not found",
-            "Topics": (openalex.topics || []).slice(0, 5).map(t => t.display_name).join("; ") || "Data not found"
+            "P-ISSN": bib.pissn || openData.issn?.find(x => x !== issn) || crossData.ISSN?.find(x => x !== issn) || "Not found",
+            "Title": bib.title || openData.display_name || crossData.title || "Not found",
+            "Publisher": publisher || "Not found",
+            "Publisher Country": bib.publisher?.country || openData.country_code || "Not found",
+            "ROR Name": rorName,
+            "ROR ID": rorId,
+            "URL": bib.ref?.journal || openData.homepage_url || crossData.URL || "Not found",
+            "License": bib.license?.[0]?.type || "Not found",
+            "License URL": bib.license?.[0]?.url || "Not found",
+            "Language": (bib.language || []).join(", ") || "Not found",
+            "APC": bib.apc?.has_apc ? "Yes" : (openData.apc_prices?.length ? "Yes" : "No"),
+            "APC Amount": bib.apc?.max?.[0]?.price || openData.apc_prices?.[0]?.price || "Not found",
+            "APC Currency": bib.apc?.max?.[0]?.currency || openData.apc_prices?.[0]?.currency || "Not found",
+            "Subjects": (bib.subject || []).map(s => `${s.term} (${s.scheme})`).join("; ") || "Not found",
+            "Keywords": (bib.keywords || []).join(", ") || "Not found",
+            "Review Process": Array.isArray(bib.editorial?.review_process) ? bib.editorial.review_process.join(", ") : "Not found",
+            "Publication Time (weeks)": bib.publication_time_weeks || "Not found",
+            "OA Start Year": bib.oa_start || "Not found",
+            "BOAI Compliant": bib.boai ? "Yes" : (openData.is_oa ? "Yes" : "No"),
+            "Uses DOI": (bib.pid_scheme?.has_pid_scheme && bib.pid_scheme.scheme?.includes("DOI")) || openData.works_count > 0 || crossData["doi-prefixes"] ? "Yes" : "No",
+            "DOI Prefix": crossData["doi-prefixes"]?.[0]?.prefix || "Not found",
+            "Crossref Member ID": crossData.member || "Not found",
+            "Works Count": openData.works_count || "Not found",
+            "Cited By Count": openData.cited_by_count || "Not found",
+            "h-index": openData.summary_stats?.h_index || "Not found",
+            "Topics": (openData.topics || []).slice(0, 5).map(t => t.display_name).join("; ") || "Not found"
           };
 
-          allResults.push([issn, result]);
-          cache[issn] = result;
-          saveCache(cache);
-        } catch (err) {
-          console.error(err);
-          status.innerText = `❌ Error on ${issn}`;
+          localStorage.setItem(getCacheKey(issn), JSON.stringify(result));
+          renderTable(result, issn, false);
+        } catch (e) {
+          status.innerText = `❌ Error fetching ${issn}`;
+          console.error(e);
         }
-      }
+      });
+    }
 
-      resultDiv.innerHTML = allResults.map(([issn, res]) => {
-        const id = `table-${issn}`;
-        return `<h4>${issn}${res._fromCache ? " (cached)" : ""}</h4>` +
-          makeTable(res, id);
-      }).join("<hr/>");
-
+    function renderTable(data, issn, cached) {
+      const title = `<h3>${issn} ${cached ? "(from cache)" : ""}</h3>`;
+      const html = `<table><tbody>${Object.entries(data).map(([k, v]) =>
+        `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</tbody></table>`;
+      resultDiv.innerHTML += title + html;
       status.innerText = "✅ Lookup complete.";
     }
 
-    function makeTable(data, id = "") {
-      let html = `<table id="${id}"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>`;
-      for (let key in data) {
-        if (key === "_fromCache") continue;
-        html += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
-      }
-      html += "</tbody></table>";
-      return html;
+    function clearCache() {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("lookup_")) localStorage.removeItem(key);
+      });
+      alert("Cache cleared.");
     }
 
-    function copyAllResults() {
-      const allTables = document.querySelectorAll("table");
-      const rows = Array.from(allTables).map(table => {
-        return Array.from(table.querySelectorAll("tbody tr")).map(row =>
-          row.cells[1].innerText.replace(/\n/g, " ").trim()
-        ).join("\t");
-      });
-      const finalText = rows.join("\n");
-      navigator.clipboard.writeText(finalText).then(() => {
-        alert("All results copied (transposed, no headers)");
+    function copyToClipboard() {
+      const rows = Array.from(document.querySelectorAll("table tbody"));
+      const allValues = rows.map(tbl => {
+        const tds = Array.from(tbl.querySelectorAll("tr td:nth-child(2)"));
+        return tds.map(td => td.innerText).join("\t");
+      }).join("\n");
+      navigator.clipboard.writeText(allValues).then(() => {
+        alert("Copied transposed data.");
       });
     }
 
     function exportCSV() {
-      const tables = document.querySelectorAll("table");
-      const csv = [];
-
-      tables.forEach(table => {
-        const rows = Array.from(table.querySelectorAll("tbody tr"));
-        const values = rows.map(row => `"${row.cells[1].innerText.replace(/\n/g, " ").trim()}"`);
-        csv.push(values.join(","));
+      const rows = Array.from(document.querySelectorAll("table tbody"));
+      let csv = "";
+      rows.forEach(tbl => {
+        const tds = Array.from(tbl.querySelectorAll("tr td:nth-child(2)"));
+        csv += tds.map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(",") + "\n";
       });
-
-      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "journal_metadata.csv";
+      a.href = url;
+      a.download = "lookup_results.csv";
       a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Auto-load dark mode
+    if (localStorage.getItem("darkMode") === "true") {
+      document.body.classList.add("dark-mode");
+      darkToggle.checked = true;
     }
   </script>
 </body>
