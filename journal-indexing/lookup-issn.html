@@ -272,20 +272,34 @@
     }
 
     function exportCSV() {
-      const rows = Array.from(document.querySelectorAll("table tbody"));
-      let csv = "";
-      rows.forEach(tbl => {
-        const tds = Array.from(tbl.querySelectorAll("tr td:nth-child(2)"));
-        csv += tds.map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(",") + "\n";
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "lookup_results.csv";
-      a.click();
-      URL.revokeObjectURL(url);
+    const resultTables = document.querySelectorAll("#result table");
+    if (!resultTables.length) {
+        alert("No data to export.");
+        return;
     }
+
+    // Extract header from the first column (Field names)
+    const headerCells = Array.from(resultTables[0].querySelectorAll("tr td:first-child"));
+    const header = headerCells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(",");
+
+    // Extract rows: each table is one journal, take second column (Values)
+    const dataRows = Array.from(resultTables).map(table => {
+        const valueCells = Array.from(table.querySelectorAll("tr td:nth-child(2)"));
+        return valueCells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(",");
+    });
+
+    const csvContent = [header, ...dataRows].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = "journal_metadata.csv";
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
 
     // Auto-load dark mode
     if (localStorage.getItem("darkMode") === "true") {
