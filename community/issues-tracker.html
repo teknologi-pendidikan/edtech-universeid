@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EdTechID Knowledgebase Submissions Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .no-issues { margin-top: 1em; color: gray; }
+    </style>
+</head>
+<body>
+
+<h1>Community Submission Tracker</h1>
+<p>Filtered by label: <strong>Content Submission</strong></p>
+
+<table id="issues-table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Submitted By</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody id="issues-body">
+        <tr><td colspan="4">Loading issues...</td></tr>
+    </tbody>
+</table>
+
+<script>
+    const owner = "teknologi-pendidikan";  // Replace this
+    const repo = "edtech-universeid";   // Replace this
+    const label = "Content Submission";    // Your label
+
+    const apiURL = `https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=${encodeURIComponent(label)}`;
+
+    fetch(apiURL)
+        .then(response => response.json())
+        .then(issues => {
+            const tbody = document.getElementById('issues-body');
+            tbody.innerHTML = "";
+
+            if (!Array.isArray(issues) || issues.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="no-issues">No active submissions with label "${label}".</td></tr>`;
+                return;
+            }
+
+            issues.forEach(issue => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${issue.number}</td>
+                    <td><a href="${issue.html_url}" target="_blank">${issue.title}</a></td>
+                    <td>${issue.user.login}</td>
+                    <td>${new Date(issue.created_at).toLocaleDateString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(error => {
+            document.getElementById('issues-body').innerHTML =
+                `<tr><td colspan="4">Error fetching issues.</td></tr>`;
+            console.error(error);
+        });
+</script>
+
+</body>
+</html>
