@@ -35,7 +35,7 @@
     const repo = "edtech-universeid";   // Replace this
     const label = "Content Submission";    // Your label
 
-    const apiURL = `https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=${encodeURIComponent(label)}`;
+    const apiURL = `https://api.github.com/repos/${owner}/${repo}/issues`;
 
     fetch(apiURL)
         .then(response => response.json())
