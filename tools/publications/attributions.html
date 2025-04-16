@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordPress Attribution Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            daisyui: {
+                themes: ["light"],
+                darkTheme: "light", // Force light theme
+            },
+        }
+    </script>
+    <style>
+        /* Override DaisyUI input styling to ensure light backgrounds */
+        .input,
+        .textarea,
+        .select {
+            background-color: white !important;
+            color: #1f2937 !important;
+            border-color: #e5e7eb !important;
+        }
+
+        .input:focus,
+        .textarea:focus,
+        .select:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5) !important;
+        }
+
+        /* Ensure toggle buttons use proper colors */
+        .toggle {
+            background-color: #e5e7eb;
+        }
+
+        .toggle:checked {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen py-12">
+    <div class="container mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-primary text-white p-6">
+            <h1 class="text-3xl font-bold text-center">WordPress Attribution Generator</h1>
+            <p class="text-center mt-2 opacity-90">Create professional attributions for republished WordPress content
+            </p>
+        </div>
+
+        <div class="p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Input Form -->
+                <div class="space-y-8">
+                    <!-- Basic Source Info Section -->
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h2 class="text-xl font-semibold mb-4 text-primary">Source Information</h2>
+
+                        <div class="form-control w-full mb-5">
+                            <label class="label">
+                                <span class="label-text font-medium">Website URL</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="url" id="site-url" placeholder="Enter website URL"
+                                    value="https://teknologipendidikan.org/" class="input input-bordered w-full" />
+                                <button id="site-clear-btn" class="btn btn-square">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="site-url-validation" class="label hidden">
+                                <span class="label-text-alt text-error">Please enter a valid URL</span>
+                            </div>
+                        </div>
+
+                        <div class="form-control w-full mb-5">
+                            <label class="label">
+                                <span class="label-text font-medium">Article Full URL</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="url" id="article-url" placeholder="Enter article URL"
+                                    class="input input-bordered w-full" />
+                                <button id="article-clear-btn" class="btn btn-square">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="article-url-validation" class="label hidden">
+                                <span class="label-text-alt text-error">Please enter a valid URL</span>
+                            </div>
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-medium">Article Title</span>
+                            </label>
+                            <input type="text" id="article-title" placeholder="Enter original article title"
+                                class="input input-bordered w-full" />
+                        </div>
+                    </div>
+
+                    <!-- Advanced Attribution Options -->
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h2 class="text-xl font-semibold mb-4 text-primary">Additional Details</h2>
+
+                        <!-- Author Box Section -->
+                        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-8">
+                            <h2 class="text-xl font-semibold mb-4 text-primary">Author Box Preview</h2>
+
+                            <div class="flex items-center justify-between p-3 border rounded-lg mb-5 bg-white">
+                                <span class="text-sm font-medium">Include author box</span>
+                                <input type="checkbox" id="author-box-toggle" class="toggle toggle-primary" />
+                            </div>
+
+                            <div id="author-box-options" class="space-y-4 hidden">
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-medium">Author Avatar URL</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="url" id="author-avatar" placeholder="Enter avatar image URL"
+                                            class="input input-bordered w-full" />
+                                        <button id="avatar-clear-btn" class="btn btn-square">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-medium">Author Bio</span>
+                                    </label>
+                                    <textarea id="author-bio" class="textarea textarea-bordered h-24"
+                                        placeholder="Brief author biography or description"></textarea>
+                                </div>
+
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-medium">Author Website</span>
+                                    </label>
+                                    <input type="url" id="author-website"
+                                        placeholder="Author's personal website or profile URL"
+                                        class="input input-bordered w-full" />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="form-control w-full">
+                                        <label class="label">
+                                            <span class="label-text font-medium">Twitter/X</span>
+                                        </label>
+                                        <input type="text" id="author-twitter" placeholder="Twitter/X username"
+                                            class="input input-bordered w-full" />
+                                    </div>
+
+                                    <div class="form-control w-full">
+                                        <label class="label">
+                                            <span class="label-text font-medium">LinkedIn</span>
+                                        </label>
+                                        <input type="text" id="author-linkedin" placeholder="LinkedIn username"
+                                            class="input input-bordered w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text font-medium">Box Style</span>
+                                    </label>
+                                    <select id="author-box-style" class="select select-bordered w-full">
+                                        <option value="standard">Standard</option>
+                                        <option value="minimal">Minimal</option>
+                                        <option value="card">Card Style</option>
+                                        <option value="bordered">Bordered</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Author Box Preview -->
+                            <div id="author-box-preview" class="mt-5 hidden">
+                                <h3 class="text-sm font-semibold mb-2 text-gray-700">Preview:</h3>
+                                <div id="author-box-output" class="bg-white border rounded-lg p-4"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-control w-full mb-5">
+                            <label class="label">
+                                <span class="label-text font-medium">Author Name</span>
+                            </label>
+                            <input type="text" id="author-name" placeholder="Enter original author's name"
+                                class="input input-bordered w-full" />
+                        </div>
+
+                        <div class="form-control w-full mb-5">
+                            <label class="label">
+                                <span class="label-text font-medium">Publication Date</span>
+                            </label>
+                            <input type="date" id="pub-date" class="input input-bordered w-full" />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-medium">License Type</span>
+                            </label>
+                            <select id="license-type" class="select select-bordered w-full">
+                                <option value="none">-- Select License --</option>
+                                <option value="cc-by">CC BY (Attribution)</option>
+                                <option value="cc-by-sa">CC BY-SA (Attribution-ShareAlike)</option>
+                                <option value="cc-by-nd">CC BY-ND (Attribution-NoDerivs)</option>
+                                <option value="cc-by-nc">CC BY-NC (Attribution-NonCommercial)</option>
+                                <option value="cc-by-nc-sa">CC BY-NC-SA (Attribution-NonCommercial-ShareAlike)</option>
+                                <option value="cc-by-nc-nd">CC BY-NC-ND (Attribution-NonCommercial-NoDerivs)</option>
+                                <option value="all-rights">All Rights Reserved</option>
+                                <option value="public-domain">Public Domain</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Attribution Style and Output -->
+                <div class="space-y-8">
+                    <!-- Attribution Style Options -->
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h2 class="text-xl font-semibold mb-4 text-primary">Attribution Style</h2>
+
+                        <div class="grid grid-cols-3 gap-3 mb-5">
+                            <div class="border rounded-lg p-4 hover:bg-gray-100 cursor-pointer radio-container">
+                                <label class="flex flex-col items-center cursor-pointer h-full">
+                                    <input type="radio" name="attribution-style" value="simple"
+                                        class="radio radio-primary mb-2" checked />
+                                    <span class="font-medium">Simple</span>
+                                    <span class="text-xs text-center text-gray-500 mt-1">Basic attribution with
+                                        essential information</span>
+                                </label>
+                            </div>
+                            <div class="border rounded-lg p-4 hover:bg-gray-100 cursor-pointer radio-container">
+                                <label class="flex flex-col items-center cursor-pointer h-full">
+                                    <input type="radio" name="attribution-style" value="academic"
+                                        class="radio radio-primary mb-2" />
+                                    <span class="font-medium">Academic</span>
+                                    <span class="text-xs text-center text-gray-500 mt-1">Formal citation style for
+                                        scholarly work</span>
+                                </label>
+                            </div>
+                            <div class="border rounded-lg p-4 hover:bg-gray-100 cursor-pointer radio-container">
+                                <label class="flex flex-col items-center cursor-pointer h-full">
+                                    <input type="radio" name="attribution-style" value="journalistic"
+                                        class="radio radio-primary mb-2" />
+                                    <span class="font-medium">Journalistic</span>
+                                    <span class="text-xs text-center text-gray-500 mt-1">News-style attribution
+                                        format</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 border rounded-lg mb-5 bg-white">
+                            <span class="text-sm font-medium">Use custom template</span>
+                            <input type="checkbox" id="custom-template-toggle" class="toggle toggle-primary" />
+                        </div>
+
+                        <div id="template-editor" class="form-control w-full mb-5 hidden">
+                            <label class="label">
+                                <span class="label-text font-medium">Custom Template</span>
+                            </label>
+                            <textarea id="template-text" class="textarea textarea-bordered h-32"
+                                placeholder="Use placeholders like {site}, {url}, {title}, etc.">Artikel ini sebelumnya sudah dimuat pada {site}. Baca artikel sumber di {url}</textarea>
+                            <label class="label">
+                                <span class="label-text-alt">Available placeholders: {site}, {domain}, {url}, {title},
+                                    {author}, {date}, {license}</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 border rounded-lg bg-white">
+                            <span class="text-sm font-medium">Generate HTML output</span>
+                            <input type="checkbox" id="html-output-toggle" class="toggle toggle-primary" />
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button id="generate-button" class="btn btn-primary btn-lg w-full mb-2">Generate
+                            Attribution</button>
+                        <span class="text-xs text-gray-500">Fill in at least the website and article URLs</span>
+                    </div>
+
+                    <!-- Output Container -->
+                    <div id="output-container" class="border rounded-lg bg-gray-50 overflow-hidden hidden">
+                        <div class="tabs w-full bg-gray-200">
+                            <a class="tab tab-lifted tab-active px-8 font-medium" id="plain-text-tab">Plain Text</a>
+                            <a class="tab tab-lifted px-8 font-medium" id="html-tab">HTML</a>
+                        </div>
+
+                        <div class="p-5">
+                            <div id="plain-text-output" class="output-panel">
+                                <h3 class="text-sm font-semibold mb-2 text-gray-700">Generated Attribution:</h3>
+                                <div class="bg-white border rounded-lg p-4 mb-4">
+                                    <p id="output-text" class="break-words"></p>
+                                </div>
+                            </div>
+
+                            <div id="html-output" class="output-panel hidden">
+                                <h3 class="text-sm font-semibold mb-2 text-gray-700">HTML Attribution:</h3>
+                                <div class="bg-white border rounded-lg p-4 mb-4 overflow-x-auto">
+                                    <pre id="html-output-text" class="break-words text-xs"></pre>
+                                </div>
+                                <div class="mb-4 p-4 border rounded-lg bg-white">
+                                    <h4 class="text-xs font-semibold mb-2">Preview:</h4>
+                                    <div id="html-preview" class="text-sm"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button id="copy-button" class="btn btn-success flex-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    Copy to Clipboard
+                                </button>
+                                <button id="reset-button" class="btn btn-outline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success fixed bottom-4 right-4 max-w-sm hidden" id="copy-alert">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Copied to clipboard!</span>
+        </div>
+
+        <div class="border-t border-gray-200 py-4 text-center">
+            <p class="text-gray-500">Created for EdTech UniverseID</p>
+        </div>
+    </div>
+
+    <script>
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('generate-button').addEventListener('click', generateAttribution);
+            document.getElementById('copy-button').addEventListener('click', copyToClipboard);
+            document.getElementById('reset-button').addEventListener('click', resetForm);
+            document.getElementById('site-clear-btn').addEventListener('click', () => clearInput('site-url'));
+            document.getElementById('article-clear-btn').addEventListener('click', () => clearInput('article-url'));
+            document.getElementById('custom-template-toggle').addEventListener('change', toggleTemplateEditor);
+            document.getElementById('plain-text-tab').addEventListener('click', () => switchTab('plain-text'));
+            document.getElementById('author-box-toggle').addEventListener('change', toggleAuthorBoxOptions);
+            document.getElementById('author-avatar').addEventListener('input', updateAuthorBoxPreview);
+            document.getElementById('author-name').addEventListener('input', updateAuthorBoxPreview);
+            document.getElementById('author-bio').addEventListener('input', updateAuthorBoxPreview);
+            document.getElementById('author-website').addEventListener('input', updateAuthorBoxPreview);
+            document.getElementById('author-twitter').addEventListener('input', updateAuthorBoxPreview);
+            document.getElementById('author-linkedin').addEventListener('input', updateAuthorBoxPreview);
+            document.getElementById('author-box-style').addEventListener('change', updateAuthorBoxPreview);
+            document.getElementById('avatar-clear-btn').addEventListener('click', () => clearInput('author-avatar'));
+            document.getElementById('html-tab').addEventListener('click', () => switchTab('html'));
+
+            // URL validation on blur
+            document.getElementById('site-url').addEventListener('blur', () => validateUrl('site-url'));
+            document.getElementById('article-url').addEventListener('blur', () => validateUrl('article-url'));
+
+            // Make the entire radio container clickable
+            document.querySelectorAll('.radio-container').forEach(container => {
+                container.addEventListener('click', function () {
+                    const radio = this.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                });
+            });
+        });
+
+        function validateUrl(inputId) {
+            const input = document.getElementById(inputId);
+            const validationDiv = document.getElementById(`${inputId}-validation`);
+
+            if (input.value.trim() === '') {
+                validationDiv.classList.add('hidden');
+                return true;
+            }
+
+            try {
+                new URL(input.value);
+                validationDiv.classList.add('hidden');
+                return true;
+            } catch (e) {
+                validationDiv.classList.remove('hidden');
+                return false;
+            }
+        }
+
+        function extractDomain(url) {
+            try {
+                const hostname = new URL(url).hostname;
+                return hostname.replace(/^www\./, '');
+            } catch (e) {
+                return url;
+            }
+        }
+
+        function toggleTemplateEditor() {
+            const templateEditor = document.getElementById('template-editor');
+            if (document.getElementById('custom-template-toggle').checked) {
+                templateEditor.classList.remove('hidden');
+            } else {
+                templateEditor.classList.add('hidden');
+            }
+        }
+
+        function switchTab(tab) {
+            // Clear active state from all tabs
+            document.querySelectorAll('.tab').forEach(element => {
+                element.classList.remove('tab-active');
+            });
+
+            // Hide all output panels
+            document.querySelectorAll('.output-panel').forEach(element => {
+                element.classList.add('hidden');
+            });
+
+            // Activate selected tab
+            if (tab === 'plain-text') {
+                document.getElementById('plain-text-tab').classList.add('tab-active');
+                document.getElementById('plain-text-output').classList.remove('hidden');
+            } else {
+                document.getElementById('html-tab').classList.add('tab-active');
+                document.getElementById('html-output').classList.remove('hidden');
+            }
+        }
+
+        function clearInput(inputId) {
+            document.getElementById(inputId).value = '';
+            document.getElementById(inputId).focus();
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+
+            const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        function getLicenseText(licenseType) {
+            const licenses = {
+                'none': '',
+                'cc-by': 'under CC BY License',
+                'cc-by-sa': 'under CC BY-SA License',
+                'cc-by-nd': 'under CC BY-ND License',
+                'cc-by-nc': 'under CC BY-NC License',
+                'cc-by-nc-sa': 'under CC BY-NC-SA License',
+                'cc-by-nc-nd': 'under CC BY-NC-ND License',
+                'all-rights': 'All Rights Reserved',
+                'public-domain': 'Public Domain'
+            };
+
+            return licenses[licenseType] || '';
+        }
+
+        function generateAttributionText(style, data) {
+            const { site, domain, url, title, author, date, license } = data;
+
+            switch (style) {
+                case 'simple':
+                    let simple = `Artikel ini sebelumnya sudah dimuat pada ${site}.`;
+                    if (title) simple += ` Judul asli: "${title}".`;
+                    if (author) simple += ` Ditulis oleh ${author}.`;
+                    if (url) simple += ` Baca artikel sumber di ${url}`;
+                    if (license) simple += ` ${license}`;
+                    return simple;
+
+                case 'academic':
+                    let academic = '';
+                    if (author) academic += `${author}. `;
+                    if (date) academic += `(${date.split('-')[0]}). `;
+                    if (title) academic += `"${title}". `;
+                    academic += `${domain}. `;
+                    if (url) academic += `Diakses dari ${url}`;
+                    if (license) academic += ` ${license}`;
+                    return academic;
+
+                case 'journalistic':
+                    let journalistic = '';
+                    if (title) journalistic += `"${title}" `;
+                    if (author && date) {
+                        journalistic += `oleh ${author}, dipublikasikan pada ${date}`;
+                    } else if (author) {
+                        journalistic += `oleh ${author}`;
+                    } else if (date) {
+                        journalistic += `dipublikasikan pada ${date}`;
+                    }
+
+                    if (site) {
+                        if (author || date) {
+                            journalistic += ` di ${site}`;
+                        } else {
+                            journalistic += `Dipublikasikan di ${site}`;
+                        }
+                    }
+
+                    if (url) journalistic += `. Tersedia di: ${url}`;
+                    if (license) journalistic += ` ${license}`;
+                    return journalistic;
+
+                default:
+                    return `Artikel dari ${site}: ${url}`;
+            }
+        }
+
+        function generateHtmlAttribution(style, data) {
+            const { site, domain, url, title, author, date, license } = data;
+
+            let html = '<p class="attribution">';
+
+            switch (style) {
+                case 'simple':
+                    html += `Artikel ini sebelumnya sudah dimuat pada <a href="${site}" target="_blank" rel="noopener">${domain}</a>.`;
+                    if (title) html += ` Judul asli: "<strong>${title}</strong>".`;
+                    if (author) html += ` Ditulis oleh <em>${author}</em>.`;
+                    if (url) html += ` Baca artikel sumber di <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+                    if (license) html += ` <span class="license">${license}</span>`;
+                    break;
+
+                case 'academic':
+                    if (author) html += `<span class="author">${author}</span>. `;
+                    if (date) html += `(<span class="year">${date.split('-')[0]}</span>). `;
+                    if (title) html += `"<span class="title">${title}</span>". `;
+                    html += `<span class="site">${domain}</span>. `;
+                    if (url) html += `Diakses dari <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+                    if (license) html += ` <span class="license">${license}</span>`;
+                    break;
+
+                case 'journalistic':
+                    if (title) html += `"<strong class="title">${title}</strong>" `;
+                    if (author && date) {
+                        html += `oleh <em class="author">${author}</em>, dipublikasikan pada <span class="date">${date}</span>`;
+                    } else if (author) {
+                        html += `oleh <em class="author">${author}</em>`;
+                    } else if (date) {
+                        html += `dipublikasikan pada <span class="date">${date}</span>`;
+                    }
+
+                    if (site) {
+                        if (author || date) {
+                            html += ` di <a href="${site}" target="_blank" rel="noopener">${domain}</a>`;
+                        } else {
+                            html += `Dipublikasikan di <a href="${site}" target="_blank" rel="noopener">${domain}</a>`;
+                        }
+                    }
+
+                    if (url) html += `. Tersedia di: <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+                    if (license) html += ` <span class="license">${license}</span>`;
+                    break;
+
+                default:
+                    html += `Artikel dari <a href="${site}" target="_blank" rel="noopener">${domain}</a>:
+                            <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+            }
+
+            html += '</p>';
+            return html;
+        }
+
+        function applyTemplate(template, data) {
+            return template
+                .replace(/{site}/g, data.site)
+                .replace(/{domain}/g, data.domain)
+                .replace(/{url}/g, data.url)
+                .replace(/{title}/g, data.title)
+                .replace(/{author}/g, data.author)
+                .replace(/{date}/g, data.date)
+                .replace(/{license}/g, data.license);
+        }
+
+        function generateAttribution() {
+            // Get all form values
+            const siteUrl = document.getElementById('site-url').value.trim();
+            const articleUrl = document.getElementById('article-url').value.trim();
+            const articleTitle = document.getElementById('article-title').value.trim();
+            const authorName = document.getElementById('author-name').value.trim();
+            const pubDate = document.getElementById('pub-date').value;
+            const licenseType = document.getElementById('license-type').value;
+
+            // Validate required fields
+            if (!siteUrl || !articleUrl) {
+                alert('Please fill in both website and article URLs');
+                return;
+            }
+
+            // Validate URLs
+            if (!validateUrl('site-url') || !validateUrl('article-url')) {
+                alert('Please enter valid URLs');
+                return;
+            }
+
+            // Get selected attribution style
+            const attributionStyle = document.querySelector('input[name="attribution-style"]:checked').value;
+            const useCustomTemplate = document.getElementById('custom-template-toggle').checked;
+            const generateHtml = document.getElementById('html-output-toggle').checked;
+
+            // Prepare data object
+            const siteDomain = extractDomain(siteUrl);
+            const formattedDate = formatDate(pubDate);
+            const licenseText = getLicenseText(licenseType);
+
+            const data = {
+                site: siteUrl,
+                domain: siteDomain,
+                url: articleUrl,
+                title: articleTitle,
+                author: authorName,
+                date: formattedDate,
+                license: licenseText
+            };
+
+            // Generate attribution text
+            let plainText;
+            if (useCustomTemplate) {
+                const template = document.getElementById('template-text').value;
+                plainText = applyTemplate(template, data);
+            } else {
+                plainText = generateAttributionText(attributionStyle, data);
+            }
+
+            // Generate HTML attribution if requested
+            const htmlText = generateHtmlAttribution(attributionStyle, data);
+
+            // Update output
+            document.getElementById('output-text').textContent = plainText;
+            document.getElementById('html-output-text').textContent = htmlText;
+            document.getElementById('html-preview').innerHTML = htmlText;
+
+            // Show output container
+            document.getElementById('output-container').classList.remove('hidden');
+
+            // Show appropriate tab
+            if (generateHtml) {
+                switchTab('html');
+            } else {
+                switchTab('plain-text');
+            }
+        }
+
+        function copyToClipboard() {
+            let text;
+
+            // Determine which tab is active
+            if (document.getElementById('plain-text-tab').classList.contains('tab-active')) {
+                text = document.getElementById('output-text').textContent;
+            } else {
+                text = document.getElementById('html-output-text').textContent;
+            }
+
+            if (!text) {
+                alert('Generate an attribution first');
+                return;
+            }
+
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    const alertBox = document.getElementById('copy-alert');
+                    alertBox.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        alertBox.classList.add('hidden');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy. Please try again or copy manually.');
+                });
+        }
+
+        function resetForm() {
+            document.getElementById('article-url').value = '';
+            document.getElementById('article-title').value = '';
+            document.getElementById('author-name').value = '';
+            document.getElementById('pub-date').value = '';
+            document.getElementById('license-type').value = 'none';
+            document.getElementById('output-container').classList.add('hidden');
+            document.getElementById('output-text').textContent = '';
+            document.getElementById('html-output-text').textContent = '';
+            document.getElementById('html-preview').innerHTML = '';
+        }
+
+        function toggleAuthorBoxOptions() {
+            const options = document.getElementById('author-box-options');
+            const preview = document.getElementById('author-box-preview');
+
+            if (document.getElementById('author-box-toggle').checked) {
+                options.classList.remove('hidden');
+                preview.classList.remove('hidden');
+                updateAuthorBoxPreview();
+            } else {
+                options.classList.add('hidden');
+                preview.classList.add('hidden');
+            }
+        }
+
+        function updateAuthorBoxPreview() {
+            const authorName = document.getElementById('author-name').value.trim() || 'Author Name';
+            const authorAvatar = document.getElementById('author-avatar').value.trim();
+            const authorBio = document.getElementById('author-bio').value.trim() || 'Author biography goes here.';
+            const authorWebsite = document.getElementById('author-website').value.trim();
+            const authorTwitter = document.getElementById('author-twitter').value.trim();
+            const authorLinkedin = document.getElementById('author-linkedin').value.trim();
+            const boxStyle = document.getElementById('author-box-style').value;
+
+            let html = generateAuthorBox(authorName, authorAvatar, authorBio, authorWebsite, authorTwitter, authorLinkedin, boxStyle);
+
+            // Update preview
+            document.getElementById('author-box-output').innerHTML = html;
+
+            // Also update the HTML output if it's visible
+            if (!document.getElementById('output-container').classList.contains('hidden') &&
+                document.getElementById('html-tab').classList.contains('tab-active')) {
+
+                const attribution = document.getElementById('html-output-text').textContent;
+                const withAuthorBox = attribution + '\n\n' + generateAuthorBoxHtml(authorName, authorAvatar, authorBio, authorWebsite, authorTwitter, authorLinkedin, boxStyle);
+
+                document.getElementById('html-output-text').textContent = withAuthorBox;
+                document.getElementById('html-preview').innerHTML = withAuthorBox;
+            }
+        }
+
+        function generateAuthorBox(name, avatar, bio, website, twitter, linkedin, style) {
+            let avatarHtml = '';
+            if (avatar) {
+                avatarHtml = `<img src="${avatar}" alt="${name}" class="w-16 h-16 rounded-full object-cover mr-4">`;
+            } else {
+                // Default avatar with initials
+                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                avatarHtml = `
+            <div class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center mr-4">
+                <span class="text-xl font-bold">${initials}</span>
+            </div>
+        `;
+            }
+
+            let socialLinks = '';
+            if (twitter || linkedin || website) {
+                socialLinks = '<div class="mt-2 flex space-x-3">';
+
+                if (website) {
+                    socialLinks += `
+                <a href="${website}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"></path>
+                    </svg>
+                </a>
+            `;
+                }
+
+                if (twitter) {
+                    socialLinks += `
+                <a href="https://twitter.com/${twitter}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-600">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.054 10.054 0 01-3.127 1.195 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    </svg>
+                </a>
+            `;
+                }
+
+                if (linkedin) {
+                    socialLinks += `
+                <a href="https://linkedin.com/in/${linkedin}" target="_blank" rel="noopener" class="text-blue-700 hover:text-blue-900">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                </a>
+            `;
+                }
+
+                socialLinks += '</div>';
+            }
+
+            // Different box styles
+            let boxClass = '';
+            switch (style) {
+                case 'minimal':
+                    boxClass = 'border-t pt-4';
+                    break;
+                case 'card':
+                    boxClass = 'bg-gray-50 shadow-sm rounded-lg p-4';
+                    break;
+                case 'bordered':
+                    boxClass = 'border-2 border-primary rounded-lg p-4';
+                    break;
+                default: // standard
+                    boxClass = 'border rounded-lg p-4';
+            }
+
+            return `
+        <div class="author-box ${boxClass}">
+            <div class="flex items-start">
+                ${avatarHtml}
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold">${name}</h3>
+                    <p class="text-gray-600 mt-1">${bio}</p>
+                    ${socialLinks}
+                </div>
+            </div>
+        </div>
+    `;
+        }
+
+        function generateAuthorBoxHtml(name, avatar, bio, website, twitter, linkedin, style) {
+            const content = generateAuthorBox(name, avatar, bio, website, twitter, linkedin, style);
+
+            return `<!-- Author Box -->
+<div class="author-box-container">
+    ${content}
+</div>`;
+        }
+
+        // Extend existing generate functions to include author box
+        const originalGenerateAttribution = generateAttribution;
+        generateAttribution = function () {
+            originalGenerateAttribution();
+
+            // Update author box if enabled
+            if (document.getElementById('author-box-toggle').checked) {
+                updateAuthorBoxPreview();
+            }
+        };
+
+        // Extend existing copyToClipboard function
+        const originalCopyToClipboard = copyToClipboard;
+        copyToClipboard = function () {
+            let text;
+
+            // Determine which tab is active
+            if (document.getElementById('plain-text-tab').classList.contains('tab-active')) {
+                text = document.getElementById('output-text').textContent;
+            } else {
+                text = document.getElementById('html-output-text').textContent;
+
+                // Include author box if enabled
+                if (document.getElementById('author-box-toggle').checked) {
+                    const authorName = document.getElementById('author-name').value.trim() || 'Author Name';
+                    const authorAvatar = document.getElementById('author-avatar').value.trim();
+                    const authorBio = document.getElementById('author-bio').value.trim() || 'Author biography goes here.';
+                    const authorWebsite = document.getElementById('author-website').value.trim();
+                    const authorTwitter = document.getElementById('author-twitter').value.trim();
+                    const authorLinkedin = document.getElementById('author-linkedin').value.trim();
+                    const boxStyle = document.getElementById('author-box-style').value;
+
+                    const authorBoxHtml = generateAuthorBoxHtml(authorName, authorAvatar, authorBio, authorWebsite, authorTwitter, authorLinkedin, boxStyle);
+                    text = text + '\n\n' + authorBoxHtml;
+                }
+            }
+
+            if (!text) {
+                alert('Generate an attribution first');
+                return;
+            }
+
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    const alertBox = document.getElementById('copy-alert');
+                    alertBox.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        alertBox.classList.add('hidden');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy. Please try again or copy manually.');
+                });
+        };
+    </script>
+</body>
+
+</html>
