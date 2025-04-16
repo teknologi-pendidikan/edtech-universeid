@@ -12,29 +12,12 @@ EDTECH-UniverseID is the first knowledge base that is openly available (data und
 
 This repository contains the administrative tools ("backoffice") used to maintain and update the UniverseID knowledge base, including:
 
-### Journal Indexing Tools
+- ISSN Lookup tool: A tool to check the validity of ISSN numbers and retrieve metadata about journals. [See the tool here](/tools/journal/lookup-issn.html).
+- Attribution tool: A tool to generate proper attribution for content used in the knowledge base. [See the tool here](/tools/publications/attributions.html).
+- Public Issues Tracker: A public issues tracker for the knowledge base. [See the tool here](/tools/github/issues-tracker.html).
 
-- **Journal Data Fetcher**: A Python notebook that collects metadata from academic journals across multiple sources including DOAJ, OpenAlex, and Crossref
-- **ISSN Lookup Tool**: Web interface for quickly retrieving journal information
 
-### Community Tools
-
-- **Issues Tracker**: Tool for tracking community submissions and contributions
-- **Metadata Management**: Utilities for organizing and updating the knowledge base
-
-## Getting Started
-
-### Using the Journal Indexing Tools
-
-1. Navigate to the journal-indexing directory
-2. Open the Jupyter notebook to fetch journal data, or use the web-based lookup tool
-3. Export data in JSON format for integration with the knowledge base
-
-### Contributing to the Knowledge Base
-
-The main knowledge base accepts contributions from the community. Use the issues tracker in this repository to submit new content or suggest improvements to existing resources.
-
-## Data License
+## License
 
 All data in the knowledge base is licensed under [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
 
