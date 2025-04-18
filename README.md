@@ -10,7 +10,7 @@ This repository hosts tools and utilities to maintain and manage the [Teknologi 
 
 ## Repository Structure
 
-[View Directory Overview](./DIRECTORY.html)
+[View Directory Overview](./directory)
 
 
 ## About
