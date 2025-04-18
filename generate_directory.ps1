@@ -345,12 +345,12 @@ function Get-DirectoryStructureHtml {
 }
 
 # Generate the directory structure in HTML
-$outputDir = "."
+$outputDir = "directory"
 if (-not (Test-Path -Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir | Out-Null
 }
 
-$outputPath = Join-Path $outputDir "directory.html"
+$outputPath = Join-Path $outputDir "index.html"
 $directoryHtml = Get-DirectoryStructureHtml
 Set-Content -Path $outputPath -Value $directoryHtml -Encoding UTF8
 
