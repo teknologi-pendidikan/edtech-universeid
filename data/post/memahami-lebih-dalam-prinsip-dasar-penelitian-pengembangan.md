@@ -3,7 +3,7 @@ title: Memahami Lebih Dalam Prinsip Dasar Penelitian Pengembangan
 author: Uwes Anis Chaeruman
 date: 2011-04-12
 tags: [teknologi pendidikan, penelitian pengembangan, instructional design]
-status: UNDER-REVIEW
+status: PUBLISHED
 original_url: http:/www.teknologipendidikan.net/2011/04/12/memahami-lebih-dalam-prinsip-dasar-penelitian-pengembangan
 wayback_timestamp: 20161130024239
 ---

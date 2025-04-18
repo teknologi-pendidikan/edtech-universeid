@@ -3,7 +3,7 @@ title: Profesi TP di Sekolah: dalam Persimpangan antara Guru TIK, Media Speciali
 author: Uwes Anis Chaeruman
 date: 2010-10-10
 tags: [teknologi pendidikan, instructional design, media specialist, guru TIK]
-status: UNDER-REVIEW
+status: PUBLISHED
 original_url: http://www.teknologipendidikan.net/2011/10/10/profesi-tp-di-sekolah-dalam-persimpangan-antara-guru-tik-media-specialist-dan-instructional-designer/
 wayback_timestamp: 20101010123456
 ---
