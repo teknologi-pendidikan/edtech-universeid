@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdTech UniverseID Repository Structure</title>
+    <style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        color: #24292e;
+        background-color: #f6f8fa;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        padding: 20px;
+    }
+    h1 {
+        color: #24292e;
+        border-bottom: 1px solid #e1e4e8;
+        padding-bottom: 10px;
+        margin-top: 0;
+    }
+    h2 {
+        color: #0366d6;
+        margin-top: 30px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+    }
+    h2:before {
+        content: "📁";
+        margin-right: 8px;
+    }
+    .file-tree {
+        list-style-type: none;
+        padding-left: 18px;
+        margin: 8px 0;
+    }
+    .file-tree li {
+        position: relative;
+        padding: 3px 0;
+    }
+    .folder {
+        font-weight: 600;
+        color: #0366d6;
+    }
+    .file-name {
+        color: #24292e;
+    }
+    .directory {
+        position: relative;
+    }
+    .directory::before {
+        content: "";
+        position: absolute;
+        left: -18px;
+        top: 10px;
+        width: 10px;
+        height: 10px;
+        border-radius: 1px;
+        border-left: 1px solid #d1d5da;
+        border-bottom: 1px solid #d1d5da;
+    }
+    .file::before {
+        content: "📄";
+        margin-right: 5px;
+        font-size: 14px;
+        opacity: 0.7;
+    }
+    a {
+        text-decoration: none;
+        color: inherit;
+        display: inline-block;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    .file-link:hover .file-name {
+        color: #0366d6;
+    }
+    .folder-link:hover .folder {
+        text-decoration: underline;
+    }
+    .directory-content {
+        padding-left: 20px;
+        border-left: 1px solid #eaecef;
+        margin-left: 10px;
+    }
+    .timestamp {
+        font-size: 0.85em;
+        color: #6a737d;
+        margin-top: 40px;
+        text-align: center;
+        border-top: 1px solid #eaecef;
+        padding-top: 20px;
+    }
+    .repo-link {
+        display: inline-block;
+        margin-top: 10px;
+        background-color: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 14px;
+        color: #0366d6;
+    }
+    .repo-link:hover {
+        background-color: #f1f4f8;
+        text-decoration: none;
+    }
+    .folder-toggle {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        margin-right: 5px;
+        cursor: pointer;
+        position: relative;
+    }
+    .folder-toggle:before {
+        content: "+";
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        text-align: center;
+        line-height: 12px;
+        font-size: 14px;
+        background-color: #f6f8fa;
+        border: 1px solid #d1d5da;
+        border-radius: 3px;
+    }
+    .directory.expanded .folder-toggle:before {
+        content: "-";
+    }
+    .directory ul {
+        display: none;
+    }
+    .directory.expanded ul {
+        display: block;
+    }
+    .search-container {
+        margin-bottom: 20px;
+    }
+    .search-input {
+        padding: 8px 12px;
+        border: 1px solid #d1d5da;
+        border-radius: 6px;
+        width: 100%;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    .search-input:focus {
+        outline: none;
+        border-color: #0366d6;
+        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
+    }
+</style>
+    <base href="/">
+</head>
+<body>
+    <div class="container">
+        <h1>EdTech UniverseID Project Structure</h1>
+
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-input" placeholder="Search files and folders...">
+        </div>
+    <h2><a href='/data' class='folder-link'>data/</a></h2>
+    <div class='directory-content'>
+<ul class='file-tree'>
+  <li class='directory'><span class='folder-toggle'></span><a href='/data/edtech-journal' class='folder-link' data-path='/data/edtech-journal'><span class='folder'>edtech-journal/</span></a></li>
+  <li class='directory'><span class='folder-toggle'></span><a href='/data/post' class='folder-link' data-path='/data/post'><span class='folder'>post/</span></a><ul class='file-tree'>
+  <li class='file'><a href='/data/post/memahami-lebih-dalam-prinsip-dasar-penelitian-pengembangan.md' class='file-link' data-path='/data/post/memahami-lebih-dalam-prinsip-dasar-penelitian-pengembangan.md'><span class='file-name'>memahami-lebih-dalam-prinsip-dasar-penelitian-pengembangan.md</span></a></li>
+  <li class='file'><a href='/data/post/profesi-tp-di-sekolah-dalam-persimpangan-antara-guru-tik-media-specialist-dan-instructional-designer-md.md' class='file-link' data-path='/data/post/profesi-tp-di-sekolah-dalam-persimpangan-antara-guru-tik-media-specialist-dan-instructional-designer-md.md'><span class='file-name'>profesi-tp-di-sekolah-dalam-persimpangan-antara-guru-tik-media-specialist-dan-instructional-designer-md.md</span></a></li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <h2><a href='/tools' class='folder-link'>tools/</a></h2>
+    <div class='directory-content'>
+<ul class='file-tree'>
+  <li class='directory'><span class='folder-toggle'></span><a href='/tools/github' class='folder-link' data-path='/tools/github'><span class='folder'>github/</span></a><ul class='file-tree'>
+  <li class='file'><a href='/tools/github/issues-tracker.html' class='file-link' data-path='/tools/github/issues-tracker.html'><span class='file-name'>issues-tracker.html</span></a></li>
+</ul>
+</li>
+  <li class='directory'><span class='folder-toggle'></span><a href='/tools/journal' class='folder-link' data-path='/tools/journal'><span class='folder'>journal/</span></a><ul class='file-tree'>
+  <li class='file'><a href='/tools/journal/eissn.txt' class='file-link' data-path='/tools/journal/eissn.txt'><span class='file-name'>eissn.txt</span></a></li>
+  <li class='file'><a href='/tools/journal/journal_metadata.json' class='file-link' data-path='/tools/journal/journal_metadata.json'><span class='file-name'>journal_metadata.json</span></a></li>
+  <li class='file'><a href='/tools/journal/journal-data-fetcher.ipynb' class='file-link' data-path='/tools/journal/journal-data-fetcher.ipynb'><span class='file-name'>journal-data-fetcher.ipynb</span></a></li>
+  <li class='file'><a href='/tools/journal/lookup-issn.html' class='file-link' data-path='/tools/journal/lookup-issn.html'><span class='file-name'>lookup-issn.html</span></a></li>
+</ul>
+</li>
+  <li class='directory'><span class='folder-toggle'></span><a href='/tools/publications' class='folder-link' data-path='/tools/publications'><span class='folder'>publications/</span></a><ul class='file-tree'>
+  <li class='file'><a href='/tools/publications/attributions.html' class='file-link' data-path='/tools/publications/attributions.html'><span class='file-name'>attributions.html</span></a></li>
+</ul>
+</li>
+</ul>
+    </div>
+
+        <div class="timestamp">
+            Generated on 2025-04-18 15.48.34
+            <br>
+            <a href="https://github.com/teknologi-pendidikan/edtech-universeid" class="repo-link">View on GitHub</a>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make all directories collapsed by default
+        const directories = document.querySelectorAll('.directory');
+        directories.forEach(dir => {
+            dir.classList.add('expanded'); // Start expanded
+        });
+
+        // Add click handler for folder toggles
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('folder-toggle') || e.target.closest('.folder-toggle')) {
+                const dir = e.target.closest('.directory');
+                dir.classList.toggle('expanded');
+                e.preventDefault();
+            }
+        });
+
+        // Handle file clicks
+        const fileLinks = document.querySelectorAll('.file-link');
+        fileLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const path = this.getAttribute('data-path');
+                // Use root-relative paths
+                window.open(path, '_blank');
+            });
+        });
+
+        // Handle folder clicks
+        const folderLinks = document.querySelectorAll('.folder-link');
+        folderLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Folder clicking is managed by the toggle handler above
+                // This just prevents default behavior
+            });
+        });
+
+        // Set up search functionality
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+
+            const allFiles = document.querySelectorAll('.file');
+            const allDirs = document.querySelectorAll('.directory');
+
+            // Reset visibility
+            allFiles.forEach(f => f.style.display = '');
+            allDirs.forEach(d => {
+                d.style.display = '';
+                d.classList.add('expanded');
+            });
+
+            if (searchTerm.trim() === '') return;
+
+            // Hide non-matching files
+            allFiles.forEach(file => {
+                const fileName = file.querySelector('.file-name').textContent.toLowerCase();
+                if (!fileName.includes(searchTerm)) {
+                    file.style.display = 'none';
+                }
+            });
+
+            // Hide empty directories
+            allDirs.forEach(dir => {
+                const hasVisibleChildren = [...dir.querySelectorAll('li')].some(
+                    child => child.style.display !== 'none'
+                );
+                if (!hasVisibleChildren && !dir.querySelector('.folder').textContent.toLowerCase().includes(searchTerm)) {
+                    dir.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
