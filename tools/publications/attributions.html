@@ -269,6 +269,11 @@
                             <input type="checkbox" id="custom-template-toggle" class="toggle toggle-primary" />
                         </div>
 
+                        <div class="flex items-center justify-between p-3 border rounded-lg mb-5 bg-white">
+                            <span class="text-sm font-medium">Include Wayback Machine link</span>
+                            <input type="checkbox" id="wayback-toggle" class="toggle toggle-primary" />
+                        </div>
+
                         <div id="template-editor" class="form-control w-full mb-5 hidden">
                             <label class="label">
                                 <span class="label-text font-medium">Custom Template</span>
@@ -376,6 +381,9 @@
             document.getElementById('author-box-style').addEventListener('change', updateAuthorBoxPreview);
             document.getElementById('avatar-clear-btn').addEventListener('click', () => clearInput('author-avatar'));
             document.getElementById('html-tab').addEventListener('click', () => switchTab('html'));
+            document.getElementById('wayback-toggle').addEventListener('change', function () {
+                // Optional: You could update a preview here if desired
+            });
 
             // URL validation on blur
             document.getElementById('site-url').addEventListener('blur', () => validateUrl('site-url'));
@@ -477,8 +485,15 @@
             return licenses[licenseType] || '';
         }
 
+        function getWaybackUrl(url) {
+            if (!url) return '';
+            return `https://web.archive.org/web/*/${url}`;
+        }
+
         function generateAttributionText(style, data) {
-            const { site, domain, url, title, author, date, license } = data;
+            const { site, domain, url, title, author, date, license, wayback } = data;
+
+            let text = '';
 
             switch (style) {
                 case 'simple':
@@ -487,7 +502,8 @@
                     if (author) simple += ` Ditulis oleh ${author}.`;
                     if (url) simple += ` Baca artikel sumber di ${url}`;
                     if (license) simple += ` ${license}`;
-                    return simple;
+                    text = simple;
+                    break;
 
                 case 'academic':
                     let academic = '';
@@ -497,7 +513,8 @@
                     academic += `${domain}. `;
                     if (url) academic += `Diakses dari ${url}`;
                     if (license) academic += ` ${license}`;
-                    return academic;
+                    text = academic;
+                    break;
 
                 case 'journalistic':
                     let journalistic = '';
@@ -520,15 +537,23 @@
 
                     if (url) journalistic += `. Tersedia di: ${url}`;
                     if (license) journalistic += ` ${license}`;
-                    return journalistic;
+                    text = journalistic;
+                    break;
 
                 default:
-                    return `Artikel dari ${site}: ${url}`;
+                    text = `Artikel dari ${site}: ${url}`;
             }
+
+            // Add Wayback link if enabled
+            if (wayback) {
+                text += ` Tersedia juga di Wayback Machine: ${wayback}`;
+            }
+
+            return text;
         }
 
         function generateHtmlAttribution(style, data) {
-            const { site, domain, url, title, author, date, license } = data;
+            const { site, domain, url, title, author, date, license, wayback } = data;
 
             let html = '<p class="attribution">';
 
@@ -577,6 +602,11 @@
                             <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
             }
 
+            // Add Wayback link if enabled
+            if (wayback) {
+                html += ` <span class="wayback">Tersedia juga di <a href="${wayback}" target="_blank" rel="noopener">Wayback Machine</a></span>`;
+            }
+
             html += '</p>';
             return html;
         }
@@ -600,6 +630,9 @@
             const authorName = document.getElementById('author-name').value.trim();
             const pubDate = document.getElementById('pub-date').value;
             const licenseType = document.getElementById('license-type').value;
+
+            const useWayback = document.getElementById('wayback-toggle').checked;
+            const waybackUrl = useWayback ? getWaybackUrl(articleUrl) : '';
 
             // Validate required fields
             if (!siteUrl || !articleUrl) {
@@ -630,7 +663,8 @@
                 title: articleTitle,
                 author: authorName,
                 date: formattedDate,
-                license: licenseText
+                license: licenseText,
+                wayback: waybackUrl
             };
 
             // Generate attribution text
@@ -728,19 +762,8 @@
 
             let html = generateAuthorBox(authorName, authorAvatar, authorBio, authorWebsite, authorTwitter, authorLinkedin, boxStyle);
 
-            // Update preview
+            // Update preview only
             document.getElementById('author-box-output').innerHTML = html;
-
-            // Also update the HTML output if it's visible
-            if (!document.getElementById('output-container').classList.contains('hidden') &&
-                document.getElementById('html-tab').classList.contains('tab-active')) {
-
-                const attribution = document.getElementById('html-output-text').textContent;
-                const withAuthorBox = attribution + '\n\n' + generateAuthorBoxHtml(authorName, authorAvatar, authorBio, authorWebsite, authorTwitter, authorLinkedin, boxStyle);
-
-                document.getElementById('html-output-text').textContent = withAuthorBox;
-                document.getElementById('html-preview').innerHTML = withAuthorBox;
-            }
         }
 
         function generateAuthorBox(name, avatar, bio, website, twitter, linkedin, style) {
