@@ -1,8 +1,3 @@
----
-title: EdTech UniverseID Backoffice
-layout: default
----
-
 # EdTech UniverseID — Backoffice
 
 **EdTech UniverseID** is an open knowledge base dedicated to educational technology.
